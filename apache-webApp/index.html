@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker & DevOps Demo - Container Orchestration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .docker-logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .card h3 {
+            color: #34495e;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .card ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .card ul li:before {
+            content: "▶ ";
+            color: #3498db;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 5px 5px 5px 0;
+        }
+
+        .badge.docker {
+            background: #0db7ed;
+        }
+
+        .badge.k8s {
+            background: #326ce5;
+        }
+
+        .badge.aws {
+            background: #ff9900;
+        }
+
+        .badge.swarm {
+            background: #2496ed;
+        }
+
+        .status {
+            text-align: center;
+            background: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .command-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .architecture {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .architecture-diagram {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .arch-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <svg class="docker-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#0db7ed" d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338 0-.676.03-1.01.09-.094-1.11-.48-2.15-1.34-2.97-.09-.08-.19-.12-.29-.12-.1 0-.19.04-.28.12-.55.55-.73 1.39-.73 2.05 0 .49.11.98.33 1.42-.33.24-.77.46-1.23.65-.47.18-.98.27-1.49.27H.65c-.36 0-.65.3-.65.66 0 1.45.21 2.88.64 4.23.36 1.16.89 2.14 1.57 2.91.76.88 1.77 1.6 3.01 2.15 1.11.49 2.42.73 3.9.73 1.31 0 2.55-.17 3.67-.51 1.27-.38 2.35-.97 3.21-1.75 1.4-1.25 2.42-2.91 3.03-4.93h.26c1.21 0 2.06-.38 2.59-.74.37-.26.65-.55.83-.86.17-.31.27-.62.3-.93.01-.08-.02-.16-.07-.22-.05-.07-.12-.1-.19-.1z"/>
+            </svg>
+            <h1>🐳 Docker & Container Orchestration Demo</h1>
+            <p>Complete DevOps Environment - Docker | Compose | Swarm | Kubernetes | EKS | ECS</p>
+            <div style="margin-top: 15px;">
+                <span class="badge docker">Docker</span>
+                <span class="badge docker">Docker Compose</span>
+                <span class="badge swarm">Docker Swarm</span>
+                <span class="badge k8s">Kubernetes</span>
+                <span class="badge aws">AWS EKS</span>
+                <span class="badge aws">AWS ECS</span>
+            </div>
+        </header>
+
+        <div class="status">
+            ✅ Container Running Successfully on Nginx
+        </div>
+
+        <div class="architecture">
+            <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">Container Orchestration Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="arch-box">
+                    <h3>Docker</h3>
+                    <p>Container Runtime</p>
+                </div>
+                <div class="arch-box">
+                    <h3>Compose</h3>
+                    <p>Multi-Container</p>
+                </div>
+                <div class="arch-box">
+                    <h3>Swarm</h3>
+                    <p>Native Clustering</p>
+                </div>
+                <div class="arch-box">
+                    <h3>Kubernetes</h3>
+                    <p>Orchestration</p>
+                </div>
+                <div class="arch-box">
+                    <h3>EKS/ECS</h3>
+                    <p>AWS Managed</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Docker Section -->
+            <div class="card">
+                <h2>🐋 Docker</h2>
+                <p><strong>Containerization Platform</strong></p>
+                
+                <h3>Key Commands:</h3>
+                <div class="code-block">
+# Build image<br>
+docker build -t myapp:1.0 .<br><br>
+# Run container<br>
+docker run -d -p 8080:80 myapp<br><br>
+# List containers<br>
+docker ps -a<br><br>
+# View logs<br>
+docker logs -f container_name
+                </div>
+
+                <h3>Features:</h3>
+                <ul>
+                    <li>Lightweight containerization</li>
+                    <li>Portable applications</li>
+                    <li>Quick deployment</li>
+                    <li>Isolated environments</li>
+                </ul>
+            </div>
+
+            <!-- Docker Compose Section -->
+            <div class="card">
+                <h2>🔧 Docker Compose</h2>
+                <p><strong>Multi-Container Applications</strong></p>
+                
+                <h3>Sample docker-compose.yml:</h3>
+                <div class="code-block">
+version: '3.8'<br>
+services:<br>
+  web:<br>
+    image: nginx:latest<br>
+    ports:<br>
+      - "8080:80"<br>
+  db:<br>
+    image: postgres:14<br>
+    environment:<br>
+      POSTGRES_PASSWORD: pass
+                </div>
+
+                <h3>Commands:</h3>
+                <div class="code-block">
+docker-compose up -d<br>
+docker-compose down<br>
+docker-compose logs -f<br>
+docker-compose ps
+                </div>
+
+                <h3>Use Cases:</h3>
+                <ul>
+                    <li>Development environments</li>
+                    <li>Testing pipelines</li>
+                    <li>Single-host deployments</li>
+                    <li>Service dependencies</li>
+                </ul>
+            </div>
+
+            <!-- Docker Swarm Section -->
+            <div class="card">
+                <h2>🐝 Docker Swarm</h2>
+                <p><strong>Native Clustering Solution</strong></p>
+                
+                <h3>Initialize Swarm:</h3>
+                <div class="code-block">
+# Init swarm mode<br>
+docker swarm init<br><br>
+# Deploy stack<br>
+docker stack deploy -c<br>
+  docker-compose.yml myapp<br><br>
+# List services<br>
+docker service ls<br><br>
+# Scale service<br>
+docker service scale<br>
+  myapp_web=5
+                </div>
+
+                <h3>Features:</h3>
+                <ul>
+                    <li>Built into Docker Engine</li>
+                    <li>Easy to set up</li>
+                    <li>Load balancing</li>
+                    <li>Service discovery</li>
+                    <li>Rolling updates</li>
+                </ul>
+            </div>
+
+            <!-- Kubernetes Section -->
+            <div class="card">
+                <h2>☸️ Kubernetes (K8s)</h2>
+                <p><strong>Production-Grade Orchestration</strong></p>
+                
+                <h3>Basic Commands:</h3>
+                <div class="code-block">
+# Create deployment<br>
+kubectl create deployment<br>
+  nginx --image=nginx<br><br>
+# Expose service<br>
+kubectl expose deployment<br>
+  nginx --port=80<br><br>
+# Scale pods<br>
+kubectl scale deployment<br>
+  nginx --replicas=3<br><br>
+# Get resources<br>
+kubectl get pods,svc,deploy
+                </div>
+
+                <h3>Components:</h3>
+                <ul>
+                    <li>Pods - Container groups</li>
+                    <li>Services - Networking</li>
+                    <li>Deployments - App management</li>
+                    <li>ConfigMaps - Configuration</li>
+                    <li>Ingress - Load balancing</li>
+                </ul>
+            </div>
+
+            <!-- AWS EKS Section -->
+            <div class="card">
+                <h2>☁️ AWS EKS</h2>
+                <p><strong>Elastic Kubernetes Service</strong></p>
+                
+                <h3>Setup Commands:</h3>
+                <div class="code-block">
+# Create cluster<br>
+eksctl create cluster<br>
+  --name my-cluster<br>
+  --region us-east-1<br>
+  --nodegroup-name workers<br>
+  --nodes 3<br><br>
+# Update kubeconfig<br>
+aws eks update-kubeconfig<br>
+  --name my-cluster<br><br>
+# Delete cluster<br>
+eksctl delete cluster<br>
+  --name my-cluster
+                </div>
+
+                <h3>Benefits:</h3>
+                <ul>
+                    <li>Managed Kubernetes control plane</li>
+                    <li>Auto-scaling</li>
+                    <li>AWS integration</li>
+                    <li>High availability</li>
+                    <li>Security patches</li>
+                </ul>
+            </div>
+
+            <!-- AWS ECS Section -->
+            <div class="card">
+                <h2>🚀 AWS ECS</h2>
+                <p><strong>Elastic Container Service</strong></p>
+                
+                <h3>Task Definition:</h3>
+                <div class="code-block">
+# Create task definition<br>
+aws ecs register-task-definition<br>
+  --cli-input-json<br>
+  file://task-def.json<br><br>
+# Create service<br>
+aws ecs create-service<br>
+  --cluster my-cluster<br>
+  --service-name my-service<br>
+  --task-definition my-task<br>
+  --desired-count 3
+                </div>
+
+                <h3>Features:</h3>
+                <ul>
+                    <li>Serverless with Fargate</li>
+                    <li>EC2 launch type</li>
+                    <li>Service auto-scaling</li>
+                    <li>Load balancer integration</li>
+                    <li>CloudWatch monitoring</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="command-section">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">📋 Quick Reference Commands</h2>
+            
+            <h3 style="color: #34495e; margin-top: 20px;">Docker Basic Commands:</h3>
+            <div class="code-block">
+docker ps                           # List running containers<br>
+docker images                       # List images<br>
+docker pull nginx:latest            # Pull image<br>
+docker run -d -p 8080:80 nginx      # Run container<br>
+docker stop container_id            # Stop container<br>
+docker rm container_id              # Remove container<br>
+docker logs -f container_id         # Follow logs<br>
+docker exec -it container_id bash   # Access container shell
+            </div>
+
+            <h3 style="color: #34495e; margin-top: 20px;">Docker Compose Commands:</h3>
+            <div class="code-block">
+docker-compose up -d                # Start services<br>
+docker-compose down                 # Stop and remove<br>
+docker-compose ps                   # List services<br>
+docker-compose logs -f              # Follow logs<br>
+docker-compose restart              # Restart services<br>
+docker-compose build                # Build images
+            </div>
+
+            <h3 style="color: #34495e; margin-top: 20px;">Kubernetes Commands:</h3>
+            <div class="code-block">
+kubectl get pods                    # List pods<br>
+kubectl get services                # List services<br>
+kubectl describe pod pod-name       # Pod details<br>
+kubectl logs pod-name               # View logs<br>
+kubectl apply -f deployment.yaml    # Apply config<br>
+kubectl delete pod pod-name         # Delete pod<br>
+kubectl exec -it pod-name -- bash   # Access pod shell
+            </div>
+
+            <h3 style="color: #34495e; margin-top: 20px;">Docker Swarm Commands:</h3>
+            <div class="code-block">
+docker swarm init                   # Initialize swarm<br>
+docker stack deploy -c stack.yml app# Deploy stack<br>
+docker service ls                   # List services<br>
+docker service scale app_web=5      # Scale service<br>
+docker stack rm app                 # Remove stack<br>
+docker node ls                      # List nodes
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>📦 Project Structure</h2>
+                <div class="code-block">
+project/<br>
+├── Dockerfile<br>
+├── docker-compose.yml<br>
+├── kubernetes/<br>
+│   ├── deployment.yaml<br>
+│   ├── service.yaml<br>
+│   └── ingress.yaml<br>
+├── swarm/<br>
+│   └── stack.yml<br>
+└── src/<br>
+    └── index.html
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🔗 Useful Links</h2>
+                <ul style="list-style: none; padding: 0;">
+                    <li><a href="https://docs.docker.com" class="btn">Docker Docs</a></li>
+                    <li><a href="https://kubernetes.io/docs" class="btn">Kubernetes Docs</a></li>
+                    <li><a href="https://docs.aws.amazon.com/eks" class="btn">AWS EKS Docs</a></li>
+                    <li><a href="https://docs.aws.amazon.com/ecs" class="btn">AWS ECS Docs</a></li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ Environment Info</h2>
+                <ul>
+                    <li><strong>Container:</strong> Nginx</li>
+                    <li><strong>Platform:</strong> Docker</li>
+                    <li><strong>OS:</strong> Linux/Unix</li>
+                    <li><strong>Port:</strong> 8080</li>
+                    <li><strong>Status:</strong> Running</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>🐳 Docker & DevOps Demo | Container Orchestration Platform</p>
+            <p>Docker • Docker Compose • Docker Swarm • Kubernetes • AWS EKS • AWS ECS</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Built with ❤️ for DevOps Engineers</p>
+        </footer>
+    </div>
+</body>
+</html>
